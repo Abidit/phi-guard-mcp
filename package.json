@@ -1,6 +1,6 @@
 {
   "name": "phi-guard-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Local-first MCP server that detects PHI flowing into LLM prompts, logs, and analytics calls in source code",
   "keywords": [
     "mcp",
