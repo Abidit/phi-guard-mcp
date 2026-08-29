@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "phi-guard": {
+      "command": "node",
+      "args": ["/mnt/code/phi-guard-mcp/dist/index.js"]
+    }
+  }
+}

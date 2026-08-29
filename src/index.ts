@@ -1,0 +1,28 @@
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
+import { redactText } from "./redact.js";
+import { scanDirectory } from "./scanCode.js";
+
+const server = new McpServer({ name: "phi-guard", version: "0.1.0" });
+
+server.tool(
+  "redact_suggest",
+  "Given a raw text snippet (a log line, a prompt, an error message), detect PHI-shaped values and return a redacted version.",
+  { text: z.string().describe("Raw text that may contain PHI") },
+  async ({ text }) => ({
+    content: [{ type: "text", text: JSON.stringify(redactText(text), null, 2) }],
+  })
+);
+
+server.tool(
+  "scan_code",
+  "Scan a local directory of source files for sensitive identifiers (patient, diagnosis, dob, ssn, mrn) flowing into risky sinks (LLM calls, logging, analytics) before they ship.",
+  { path: z.string().describe("Absolute path to the directory or repo to scan") },
+  async ({ path }) => ({
+    content: [{ type: "text", text: JSON.stringify(await scanDirectory(path), null, 2) }],
+  })
+);
+
+const transport = new StdioServerTransport();
+await server.connect(transport);
