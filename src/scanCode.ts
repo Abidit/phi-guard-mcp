@@ -9,10 +9,15 @@ export interface CodeFinding {
   snippet: string;
 }
 
+// Only letters block a match, so snake_case and digits are boundaries
+// ("patient_name" hits) while "outpatient"/"inpatient" do not.
 const SENSITIVE_IDENTIFIERS =
-  /\b(patient|diagnosis|dob|ssn|mrn|birthdate|medicalrecord)\b/i;
+  /(?<![a-zA-Z])(patient|diagnosis|dob|ssn|mrn|birthdate|medicalrecord)(?![a-zA-Z])/i;
 const RISKY_SINKS =
-  /\b(openai|anthropic|bedrock|console\.(log|error|warn)|logger\.|winston|pino|\.track\(|capture)/i;
+  /\b(openai|anthropic|bedrock|console\.(log|error|warn)|logger\.|winston|pino|\.track\(|capture(Exception|Message)?\()/i;
+// Heuristic: skips whole-line // and # comments only. Block comments and
+// trailing end-of-line comments are a known v1 limitation.
+const COMMENT_LINE = /^\s*(\/\/|#)/;
 const SCAN_EXTENSIONS = new Set([".ts", ".js", ".tsx", ".jsx", ".py", ".go"]);
 const SKIP_DIRS = new Set([
   "node_modules",
@@ -47,6 +52,7 @@ export async function scanDirectory(rootPath: string): Promise<CodeFinding[]> {
     const content = await readFile(file, "utf-8");
     const lines = content.split("\n");
     lines.forEach((line, i) => {
+      if (COMMENT_LINE.test(line)) return;
       if (SENSITIVE_IDENTIFIERS.test(line) && RISKY_SINKS.test(line)) {
         findings.push({
           file,

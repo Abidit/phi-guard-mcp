@@ -2,10 +2,11 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import pkg from "../package.json" with { type: "json" };
 import { redactText } from "./redact.js";
 import { scanDirectory } from "./scanCode.js";
 
-const server = new McpServer({ name: "phi-guard", version: "0.1.1" });
+const server = new McpServer({ name: "phi-guard", version: pkg.version });
 
 server.tool(
   "redact_suggest",
