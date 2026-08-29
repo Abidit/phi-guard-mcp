@@ -61,9 +61,14 @@ ignore the tool is worse than a missed match.
 Walks a directory and flags lines where a sensitive-looking identifier
 (`patient`, `diagnosis`, `dob`, `ssn`, `mrn`, `birthdate`, `medicalrecord`)
 appears on the same line as a risky sink (`openai`, `anthropic`, `bedrock`,
-`console.log/error/warn`, `logger.`, `winston`, `pino`, `.track(`, `capture`).
+`console.log/error/warn`, `logger.`, `winston`, `pino`, `.track(`, and
+`capture(` / `captureException(` / `captureMessage(`).
 
-Given [`test/fixtures/leaky-example.ts`](test/fixtures/leaky-example.ts):
+Whole-line `//` and `#` comments are skipped, so a file that discusses PHI
+handling in prose doesn't trip the scanner on its own documentation.
+
+Given the operative lines of
+[`test/fixtures/leaky-example.ts`](test/fixtures/leaky-example.ts):
 
 ```ts
 const prompt = await openai.responses.create({ input: `Patient: ${patient.name}, diagnosis: ${patient.diagnosis}` });
@@ -76,20 +81,22 @@ console.log("Sending patient prompt to LLM:", prompt);
 { "path": "/abs/path/to/repo/test/fixtures" }
 ```
 
-**Output**
+**Output** — excerpt. The full fixtures directory returns 8 findings, because
+it also holds the positive fixtures described under
+[Tested against](#tested-against).
 
 ```json
 [
   {
     "file": "test/fixtures/leaky-example.ts",
-    "line": 1,
+    "line": 7,
     "severity": "high",
     "issue": "Sensitive-looking identifier passed to a risky sink (LLM call, logger, or analytics)",
     "snippet": "const prompt = await openai.responses.create({ input: `Patient: ${patient.name}, diagnosis: ${patient.diagnosis}` });"
   },
   {
     "file": "test/fixtures/leaky-example.ts",
-    "line": 2,
+    "line": 8,
     "severity": "high",
     "issue": "Sensitive-looking identifier passed to a risky sink (LLM call, logger, or analytics)",
     "snippet": "console.log(\"Sending patient prompt to LLM:\", prompt);"
@@ -104,6 +111,34 @@ Both conditions must hold **on the same line**. That is what keeps it quiet: on
 this repo's own source — which is dense with the words `patient`, `diagnosis`,
 `mrn`, and `ssn` inside its pattern definitions — it reports zero findings.
 
+## Tested against
+
+**6 out of 6 real leak patterns detected**, across 5 different sinks (OpenAI,
+Anthropic, Sentry, Winston, PostHog/analytics) and 2 languages (TypeScript,
+Python) — including snake_case identifiers (`patient_name`,
+`patient_diagnosis`), which a naive word-boundary regex misses and which is the
+dominant naming convention in Python and Go.
+
+**0 false positives across 5 clean-code fixtures**, including code that
+discusses PHI policy in comments and prose without ever leaking it, and code
+that legitimately handles patient records without sending them anywhere risky.
+
+**1 documented limitation:** detection is line-based, so a sensitive value
+assigned on one line and used in a risky call several lines later isn't
+currently caught. This is a known scope boundary, not a bug — see
+[What this is NOT](#what-this-is-not) below.
+
+Full test fixtures live in [`test/fixtures/`](test/fixtures/) if you want to
+verify any of this yourself rather than take it on faith:
+
+```bash
+npm test
+```
+
+The suite asserts both directions: every file under `positive/` must produce at
+least one finding, and `negative/` must produce exactly zero. A miss on either
+side fails the run.
+
 ## What this is NOT
 
 - **Not a hosted service.** It is a local stdio process. There is no backend, no
@@ -116,8 +151,19 @@ this repo's own source — which is dense with the words `patient`, `diagnosis`,
   scan infrastructure and configuration. This reads source code and finds a
   different class of problem. They are complementary; this replaces neither.
 - **Not exhaustive.** Regex-based detection has a real false-negative rate. It
-  will not catch PHI in a variable it can't name-match, data assembled across
-  multiple lines, or values arriving from an external call.
+  will not catch PHI in a variable it can't name-match, or values arriving from
+  an external call.
+- **Not able to follow a value across lines.** The identifier and the sink have
+  to appear on the same line. Assigning `patient.diagnosis` to a local variable
+  and logging that variable three lines later produces no finding — there is a
+  worked example in
+  [`test/fixtures/known-limitations/`](test/fixtures/known-limitations/). Real
+  dataflow analysis is out of scope for v1; this is a deliberate boundary, and
+  the fixture exists so the gap stays visible rather than forgotten.
+- **Not fully comment-aware.** Only whole-line `//` and `#` comments are
+  skipped. Block comments (`/* ... */`) and trailing end-of-line comments are
+  still scanned, so a sink keyword sitting inside one of those can produce a
+  finding even though nothing executes.
 
 ## Setup
 
@@ -154,6 +200,8 @@ will not reach an already-running stdio process.
 ### Verifying
 
 ```bash
+npm test          # fixture suite: positive, negative, known limitations
+npm run typecheck # src/ and test/ under strict mode
 npx tsx test/smoke.ts
 ```
 
