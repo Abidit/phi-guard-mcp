@@ -1,20 +1,37 @@
 {
   "name": "phi-guard-mcp",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "version": "0.1.0",
+  "description": "Local-first MCP server that detects PHI flowing into LLM prompts, logs, and analytics calls in source code",
+  "keywords": [
+    "mcp",
+    "healthcare",
+    "hipaa",
+    "phi",
+    "compliance",
+    "llm-security"
+  ],
+  "license": "MIT",
+  "author": "Abidit Shrestha <abistha01@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Abidit/phi-guard-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Abidit/phi-guard-mcp/issues"
+  },
+  "homepage": "https://github.com/Abidit/phi-guard-mcp#readme",
   "type": "module",
   "bin": {
     "phi-guard-mcp": "dist/index.js"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
     "zod": "^4.4.3"

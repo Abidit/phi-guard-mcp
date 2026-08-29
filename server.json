@@ -1,0 +1,24 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
+  "name": "io.github.Abidit/phi-guard-mcp",
+  "description": "Local-first PHI detection for source code, LLM prompts, logs, and analytics",
+  "status": "active",
+  "version": "0.1.0",
+  "website_url": "https://github.com/Abidit/phi-guard-mcp",
+  "repository": {
+    "url": "https://github.com/Abidit/phi-guard-mcp",
+    "source": "github",
+    "id": "1350606198"
+  },
+  "packages": [
+    {
+      "registry_type": "npm",
+      "identifier": "phi-guard-mcp",
+      "version": "0.1.0",
+      "runtime_hint": "npx",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
