@@ -14,12 +14,21 @@ const SENSITIVE_IDENTIFIERS =
 const RISKY_SINKS =
   /\b(openai|anthropic|bedrock|console\.(log|error|warn)|logger\.|winston|pino|\.track\(|capture)/i;
 const SCAN_EXTENSIONS = new Set([".ts", ".js", ".tsx", ".jsx", ".py", ".go"]);
+const SKIP_DIRS = new Set([
+  "node_modules",
+  "dist",
+  "build",
+  "coverage",
+  "out",
+  ".next",
+  ".turbo",
+]);
 
 async function walk(dir: string): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true });
   const files: string[] = [];
   for (const entry of entries) {
-    if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;
+    if (SKIP_DIRS.has(entry.name) || entry.name.startsWith(".")) continue;
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
       files.push(...(await walk(full)));

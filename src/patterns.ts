@@ -39,11 +39,8 @@ export function detectPhi(text: string): PhiMatch[] {
   const matches: PhiMatch[] = [];
   for (const pattern of PATTERNS) {
     for (const m of text.matchAll(pattern.regex)) {
-      matches.push({
-        type: pattern.type,
-        value: m[0],
-        confidence: pattern.confidence,
-      });
+      const value = m[1] ?? m[0];
+      matches.push({ type: pattern.type, value, confidence: pattern.confidence });
     }
   }
   return matches;
