@@ -221,3 +221,6 @@ probes all three regardless and shows those two in red — expected, not a fault
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+## Mcp Server Approved
+[![Listed on mcpservers.org](https://mcpservers.org/badge.svg)](https://mcpservers.org/servers/abidit/phi-guard-mcp)
