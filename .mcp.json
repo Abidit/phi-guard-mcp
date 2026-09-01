@@ -3,6 +3,10 @@
     "phi-guard": {
       "command": "node",
       "args": ["/mnt/code/phi-guard-mcp/dist/index.js"]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/mnt/code/phi-guard-mcp/test/fixtures"]
     }
   }
 }
