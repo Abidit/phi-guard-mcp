@@ -1,8 +1,2 @@
 approvers:
   - Abidit
-
-# Optional: tune domain allow-lists or disable specific rules
-# allowedDomains:
-#   - internal.acme.com
-# disabledRules:
-#   - unpinned-versions
