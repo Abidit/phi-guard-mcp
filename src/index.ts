@@ -11,9 +11,22 @@ const server = new McpServer({ name: "phi-guard", version: pkg.version });
 server.tool(
   "redact_suggest",
   "Given a raw text snippet (a log line, a prompt, an error message), detect PHI-shaped values and return a redacted version.",
-  { text: z.string().describe("Raw text that may contain PHI") },
-  async ({ text }) => ({
-    content: [{ type: "text", text: JSON.stringify(redactText(text), null, 2) }],
+  {
+    text: z.string().describe("Raw text that may contain PHI"),
+    includeMatchedValues: z
+      .boolean()
+      .optional()
+      .describe(
+        "Echo the raw matched PHI values and the original text back in the result. Off by default: the result flows into the calling model's context."
+      ),
+  },
+  async ({ text, includeMatchedValues }) => ({
+    content: [
+      {
+        type: "text",
+        text: JSON.stringify(redactText(text, includeMatchedValues ?? false), null, 2),
+      },
+    ],
   })
 );
 

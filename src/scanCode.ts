@@ -1,11 +1,14 @@
 import { readFile, readdir } from "node:fs/promises";
 import { join, extname } from "node:path";
+import { redactPhi } from "./redact.js";
 
 export interface CodeFinding {
   file: string;
   line: number;
   severity: "high" | "medium";
   issue: string;
+  /** The offending line with any literal PHI masked. Identifier names survive
+   *  (that is the useful part); literal values do not. */
   snippet: string;
 }
 
@@ -60,7 +63,7 @@ export async function scanDirectory(rootPath: string): Promise<CodeFinding[]> {
           severity: "high",
           issue:
             "Sensitive-looking identifier passed to a risky sink (LLM call, logger, or analytics)",
-          snippet: line.trim(),
+          snippet: redactPhi(line.trim()),
         });
       }
     });

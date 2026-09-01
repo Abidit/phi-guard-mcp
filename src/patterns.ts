@@ -2,6 +2,8 @@ export interface PhiMatch {
   type: string;
   value: string;
   confidence: number;
+  start: number;
+  end: number;
 }
 
 interface PhiPattern {
@@ -30,7 +32,7 @@ const PATTERNS: PhiPattern[] = [
   // Heuristic: "Patient <Capitalized Word> <Capitalized Word>"
   {
     type: "name",
-    regex: /\bPatient[:\s]+([A-Z][a-z]+ [A-Z][a-z]+)\b/g,
+    regex: /\b[Pp]atient[:\s]+([A-Z][a-z]+ [A-Z][a-z]+)\b/g,
     confidence: 0.8,
   },
 ];
@@ -40,7 +42,16 @@ export function detectPhi(text: string): PhiMatch[] {
   for (const pattern of PATTERNS) {
     for (const m of text.matchAll(pattern.regex)) {
       const value = m[1] ?? m[0];
-      matches.push({ type: pattern.type, value, confidence: pattern.confidence });
+      // Offset the capture group inside the full match so start/end point at
+      // the value itself, not at the keyword that anchored it.
+      const start = m[1] === undefined ? m.index : m.index + m[0].indexOf(m[1]);
+      matches.push({
+        type: pattern.type,
+        value,
+        confidence: pattern.confidence,
+        start,
+        end: start + value.length,
+      });
     }
   }
   return matches;

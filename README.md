@@ -32,14 +32,26 @@ PHI-shaped values, and returns a redacted version alongside what it found.
 
 ```json
 {
-  "original": "Patient John Doe (MRN-12345), DOB: 01/01/1980",
   "redacted": "Patient [NAME] ([MRN]), [DOB]",
   "detected": [
-    { "type": "mrn",  "value": "MRN-12345",       "confidence": 0.9  },
-    { "type": "dob",  "value": "DOB: 01/01/1980", "confidence": 0.85 },
-    { "type": "name", "value": "John Doe",        "confidence": 0.8  }
+    { "type": "mrn",  "confidence": 0.9,  "start": 18, "end": 27 },
+    { "type": "dob",  "confidence": 0.85, "start": 30, "end": 45 },
+    { "type": "name", "confidence": 0.8,  "start": 8,  "end": 16 }
   ]
 }
+```
+
+The matched values are **not** echoed back by default, and neither is the
+unredacted `original`. A tool result flows straight into the context of
+whatever model called it, so repeating the raw PHI there would undo the point
+of the tool. `start`/`end` are offsets into the original text, which is enough
+to locate a match without restating it.
+
+Pass `includeMatchedValues: true` when you genuinely need the raw values (a
+local CLI, a test harness) and `detected[].value` plus `original` come back:
+
+```json
+{ "text": "Patient John Doe (MRN-12345)", "includeMatchedValues": true }
 ```
 
 Patterns and their confidence scores:
@@ -107,17 +119,23 @@ it also holds the positive fixtures described under
 Scans `.ts`, `.js`, `.tsx`, `.jsx`, `.py`, `.go`. Skips `node_modules`, `dist`,
 `build`, `coverage`, `out`, `.next`, `.turbo`, and dotfiles.
 
+`snippet` is the offending line with any literal PHI masked, for the same
+reason `redact_suggest` withholds matched values: the finding is going into a
+model's context. Identifier names like `patient.diagnosis` are not literal
+values, match no PHI pattern, and stay visible — they are the actionable part.
+
 Both conditions must hold **on the same line**. That is what keeps it quiet: on
 this repo's own source — which is dense with the words `patient`, `diagnosis`,
 `mrn`, and `ssn` inside its pattern definitions — it reports zero findings.
 
 ## Tested against
 
-**6 out of 6 real leak patterns detected**, across 5 different sinks (OpenAI,
+**7 out of 7 real leak patterns detected**, across 5 different sinks (OpenAI,
 Anthropic, Sentry, Winston, PostHog/analytics) and 2 languages (TypeScript,
 Python) — including snake_case identifiers (`patient_name`,
 `patient_diagnosis`), which a naive word-boundary regex misses and which is the
-dominant naming convention in Python and Go.
+dominant naming convention in Python and Go, and a hardcoded-literal fixture
+that verifies `scan_code` masks literal PHI out of the `snippet` it returns.
 
 **0 false positives across 5 clean-code fixtures**, including code that
 discusses PHI policy in comments and prose without ever leaking it, and code
