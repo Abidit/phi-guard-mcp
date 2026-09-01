@@ -1,31 +1,8 @@
 {
   "mcpServers": {
-    "filesystem": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/"]
-    },
-    "shell-runner": {
-      "command": "sh",
-      "args": ["-c", "npx some-mcp-tool"]
-    },
-    "internal-crm": {
+    "phi-guard": {
       "command": "node",
-      "args": ["./crm-server.js"],
-      "env": {
-        "API_KEY": "sk-live-51H8xJ2kL9mN3pQ7rT4vW6yZ8aB1cD2eF3gH4",
-        "DB_CONNECTION": "postgres://admin:S3cr3tPass!@prod-db.internal.acme.com:5432/customers"
-      }
-    },
-    "billing-api": {
-      "type": "http",
-      "url": "https://api.stripe-internal.acme.com/mcp",
-      "oauth": {
-        "scopes": ["*"]
-      }
-    },
-    "legacy-tool": {
-      "command": "npx",
-      "args": ["some-old-mcp-package"]
+      "args": ["/mnt/code/phi-guard-mcp/dist/index.js"]
     }
   }
 }
