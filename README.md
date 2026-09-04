@@ -1,5 +1,9 @@
 # phi-guard-mcp
 
+[![npm version](https://img.shields.io/npm/v/phi-guard-mcp.svg)](https://www.npmjs.com/package/phi-guard-mcp)
+[![npm downloads](https://img.shields.io/npm/dt/phi-guard-mcp.svg)](https://www.npmjs.com/package/phi-guard-mcp)
+[![License: MIT](https://img.shields.io/npm/l/phi-guard-mcp.svg)](./LICENSE)
+
 A local-first [MCP](https://modelcontextprotocol.io) server that catches PHI
 (protected health information) flowing into LLM prompts, log statements, and
 analytics calls — in your source code, before it ships.
