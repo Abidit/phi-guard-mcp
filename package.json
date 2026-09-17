@@ -1,6 +1,6 @@
 {
   "name": "phi-guard-mcp",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "mcpName": "io.github.Abidit/phi-guard-mcp",
   "description": "Local-first MCP server that detects PHI flowing into LLM prompts, logs, and analytics calls in source code",
   "keywords": [
@@ -28,10 +28,16 @@
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "tsc",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run verify",
     "typecheck": "tsc --noEmit && tsc -p test/tsconfig.json",
     "dev": "tsx src/index.ts",
+    "verify": "npm run typecheck && npm test",
     "test": "npm run build && tsx test/coverage.ts",
     "test:smoke": "npm run build && tsx test/smoke.ts"
   },

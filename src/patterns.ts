@@ -1,5 +1,9 @@
+/** The PHI categories this server can recognise. Adding a category means
+ *  adding a pattern below and a row to the table in the README. */
+export type PhiType = "ssn" | "mrn" | "dob" | "name" | "phone" | "email";
+
 export interface PhiMatch {
-  type: string;
+  type: PhiType;
   value: string;
   confidence: number;
   start: number;
@@ -7,7 +11,7 @@ export interface PhiMatch {
 }
 
 interface PhiPattern {
-  type: string;
+  type: PhiType;
   regex: RegExp;
   confidence: number;
 }
@@ -15,7 +19,7 @@ interface PhiPattern {
 // Start narrow. A false positive that annoys someone into ignoring
 // the tool is worse than a missed match. Tighten/loosen based on
 // real test results, not guesses.
-const PATTERNS: PhiPattern[] = [
+const PATTERNS: readonly PhiPattern[] = [
   { type: "ssn", regex: /\b\d{3}-\d{2}-\d{4}\b/g, confidence: 0.95 },
   { type: "mrn", regex: /\bMRN[-:\s]?\d{4,10}\b/gi, confidence: 0.9 },
   {

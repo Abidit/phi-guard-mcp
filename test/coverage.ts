@@ -84,7 +84,7 @@ async function scannableFiles(dir: string): Promise<string[]> {
 
 // --- Part 1: every positive fixture must produce at least one finding ---
 console.log("=".repeat(64));
-console.log("POSITIVE FIXTURES  (each file must produce >= 1 finding)");
+console.log("REPRESENTATIVE LEAK FIXTURES  (each file must produce >= 1 finding)");
 console.log("=".repeat(64));
 
 const positiveFiles = await scannableFiles(POSITIVE);
@@ -106,28 +106,53 @@ for (const file of positiveFiles) {
     for (const h of hits) console.log(`          L${h.line}: ${h.snippet.slice(0, 96)}`);
   }
 }
-console.log(`\n  Detection rate: ${positiveFiles.length - missedPositives.length}/${positiveFiles.length}`);
+console.log(
+  `\n  Detected ${positiveFiles.length - missedPositives.length} of ${positiveFiles.length} representative leak fixtures.`
+);
 
 // --- Part 2: negative fixtures must produce exactly zero findings ---
 console.log("\n" + "=".repeat(64));
-console.log("NEGATIVE FIXTURES  (total findings must be exactly 0)");
+console.log("CLEAN FIXTURES  (total findings must be exactly 0)");
 console.log("=".repeat(64));
 
 const negativeFiles = await scannableFiles(NEGATIVE);
 const negativeFindings = await scan(NEGATIVE);
 
 if (negativeFindings.length === 0) {
-  console.log(`  PASS  0 false positives across ${negativeFiles.length} clean file(s)`);
+  console.log(`  PASS  flagged none of ${negativeFiles.length} clean fixtures`);
   for (const file of negativeFiles) console.log(`          clean: ${file}`);
 } else {
   failures++;
-  console.log(`  FAIL  ${negativeFindings.length} false positive(s) across ${negativeFiles.length} clean file(s):`);
+  console.log(
+    `  FAIL  flagged ${negativeFindings.length} line(s) across ${negativeFiles.length} clean fixtures:`
+  );
   for (const f of negativeFindings) {
     console.log(`          ${f.file}:${f.line}  ${f.snippet.slice(0, 96)}`);
   }
 }
 
-// --- Part 3: known limitations, informational only ---
+// --- Part 3: the fixture the README uses as its worked example ---
+// It lives at the fixtures root rather than under positive/, so nothing above
+// covers it. Assert it here so the README's example cannot drift from reality.
+console.log("\n" + "=".repeat(64));
+console.log("README WORKED EXAMPLE  (test/fixtures/leaky-example.ts)");
+console.log("=".repeat(64));
+
+const WORKED_EXAMPLE = "test/fixtures/leaky-example.ts";
+const workedFindings = (await scan("test/fixtures")).filter((f) => f.file === WORKED_EXAMPLE);
+assert(
+  workedFindings.length === 2,
+  `${WORKED_EXAMPLE} produces exactly 2 findings`,
+  `got ${workedFindings.length}`
+);
+assert(
+  workedFindings.map((f) => f.line).join(",") === "7,8",
+  "the two findings are on lines 7 and 8",
+  workedFindings.map((f) => f.line).join(",")
+);
+for (const f of workedFindings) console.log(`          L${f.line}: ${f.snippet}`);
+
+// --- Part 4: known limitations, informational only ---
 console.log("\n" + "=".repeat(64));
 console.log("KNOWN LIMITATIONS  (informational, no pass/fail assertion)");
 console.log("=".repeat(64));
@@ -139,7 +164,7 @@ for (const file of limitFiles) console.log(`          ${file}`);
 for (const f of limitFindings) console.log(`          UNEXPECTED ${f.file}:${f.line}  ${f.snippet.slice(0, 96)}`);
 console.log("  Cross-line dataflow is out of scope for the line-based scanner by design.");
 
-// --- Part 4: redact_suggest breadth ---
+// --- Part 5: redact_suggest breadth ---
 console.log("\n" + "=".repeat(64));
 console.log("REDACT_SUGGEST  (informational)");
 console.log("=".repeat(64));
@@ -160,7 +185,7 @@ const nameMatches = namesResult.detected.filter((d) => d.type === "name");
 console.log(`\n  two names -> ${nameMatches.length} name match(es): ${nameMatches.map((n) => `"${n.value}"`).join(", ")}`);
 console.log(`    redacted: ${namesResult.redacted}`);
 
-// --- Part 5: tool results must not carry PHI back into the caller's context ---
+// --- Part 6: tool results must not carry PHI back into the caller's context ---
 console.log("\n" + "=".repeat(64));
 console.log("PHI LEAK REGRESSION  (results must not contain raw PHI by default)");
 console.log("=".repeat(64));
@@ -263,13 +288,51 @@ assert(
 );
 assert(optInResult.original === leakProbe, "includeMatchedValues: true returns the original text");
 
+// --- Part 7: error behaviour must be explicit, not a raw errno ---
+console.log("\n" + "=".repeat(64));
+console.log("ERROR BEHAVIOUR  (bad input fails loudly and legibly)");
+console.log("=".repeat(64));
+
+async function errorTextOf(args: Record<string, unknown>): Promise<string> {
+  const result = (await client.callTool({ name: "scan_code", arguments: args })) as {
+    isError?: boolean;
+    content?: Array<{ text?: unknown }>;
+  };
+  if (!result.isError) throw new Error("expected an error result");
+  const text = result.content?.[0]?.text;
+  return typeof text === "string" ? text : "";
+}
+
+const missingPathError = await errorTextOf({ path: "/nonexistent/phi-guard-probe" });
+console.log(`          ${missingPathError}`);
+assert(
+  missingPathError.includes("No such path") &&
+    missingPathError.includes("/nonexistent/phi-guard-probe"),
+  "a missing path returns a named, actionable error"
+);
+
+const notADirError = await errorTextOf({ path: "package.json" });
+console.log(`          ${notADirError}`);
+assert(
+  notADirError.includes("is a file, not a directory"),
+  "pointing at a file returns a named, actionable error"
+);
+
 // --- Summary ---
 console.log("\n" + "=".repeat(64));
-console.log(
-  failures === 0
-    ? "RESULT: all assertions passed"
-    : `RESULT: ${failures} assertion group(s) failed`
-);
+if (failures === 0) {
+  console.log("RESULT: all assertions passed");
+  console.log(
+    `Detected all ${positiveFiles.length} representative leak fixtures and ` +
+      `flagged none of ${negativeFiles.length} clean fixtures.`
+  );
+  console.log(
+    "This is a fixture suite, not a benchmark: it says nothing about detection\n" +
+      "rates on real codebases, and is not a compliance result."
+  );
+} else {
+  console.log(`RESULT: ${failures} assertion group(s) failed`);
+}
 console.log("=".repeat(64));
 
 await client.close();
