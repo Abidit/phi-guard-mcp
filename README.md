@@ -4,8 +4,12 @@ A local-first [MCP](https://modelcontextprotocol.io) server that catches PHI
 (protected health information) flowing into LLM prompts, log statements, and
 analytics calls — in your source code, before it ships.
 
-It runs entirely on your machine over stdio. No code, no snippets, and no
-detected values are ever sent anywhere.
+The server itself makes no network calls: it runs as a local stdio process and
+never uploads your code. What it returns is a different matter. Findings go
+back to whatever MCP client launched it, so if that client is a hosted
+assistant, the findings enter that model's context. Matched PHI values are
+masked out of results by default for exactly this reason — see
+[Security boundary](#security-boundary).
 
 ## Why
 
@@ -17,9 +21,10 @@ doing what it says.
 
 ## Install
 
-Requires **Node.js 20.10 or newer**. The entrypoint uses JSON import
-attributes (`with { type: "json" }`), which Node added in 20.10, so 18.x will
-not start. Verified on Node 22.18.0, 24.2.0, and 26.8.2.
+Requires **Node.js 22 or newer**. The entrypoint uses JSON import attributes
+(`with { type: "json" }`), so older runtimes will not start it. Verified on
+Node 22.18.0, 24.2.0, and 26.8.2; Node 20 and below are unsupported and
+untested.
 
 ### From npm (recommended)
 
@@ -263,10 +268,14 @@ reason `redact_suggest` withholds matched values: the finding is going into a
 model's context. Identifier names like `patient.diagnosis` are not literal
 values, match no PHI pattern, and stay visible — they are the actionable part.
 
-An empty array means every file under `path` was read and no line matched both
-conditions. A scan that cannot read a directory or a file **fails** with a
-named error rather than returning a shorter list, because a partial result
-reads as a clean result:
+An empty array means every eligible source file discovered under `path` was
+read successfully and no line matched both conditions. "Eligible" and
+"discovered" are load-bearing: files with an unsupported extension, and
+anything under a skipped or dot-prefixed directory, are never opened.
+
+A scan that cannot read a directory or a file **fails** with a named error
+rather than returning a shorter list, because a partial result reads as a
+clean result:
 
 ```
 No such path: "/nope". Pass an absolute path to a directory that exists on the
@@ -377,7 +386,7 @@ the problem is the config path, not the server.
 `dist/` has not been built. `dist/` is gitignored on purpose. Run `npm ci`.
 
 **`SyntaxError: Unexpected identifier 'assert'` or an import-attribute error on
-startup.** Your Node is older than 20.10. Check with `node --version`. Note
+startup.** Your Node is older than 22. Check with `node --version`. Note
 that your MCP client may launch a different Node than your shell does.
 
 **Code changes don't show up.** An already-running stdio process keeps the old
@@ -397,8 +406,11 @@ directory your MCP client gave the process. Pass an absolute path.
 
 ## What this is NOT
 
-- **Not a hosted service.** It is a local stdio process. There is no backend, no
-  account, and no telemetry. Your code never leaves your machine.
+- **Not a hosted service.** It is a local stdio process. There is no backend,
+  no account, and no telemetry, and the server makes no network calls of its
+  own. That is not the same as "nothing leaves your machine": findings are
+  returned to the MCP client, which may be a hosted assistant. See
+  [Security boundary](#security-boundary).
 - **Not a HIPAA certification, audit, or compliance attestation.** Passing a
   `scan_code` run proves nothing to a regulator. It is a linter for a specific
   class of mistake, not evidence of compliance. Treat a clean result as "these
@@ -428,13 +440,20 @@ The server reads any directory it is handed, on the machine it runs on, with
 the permissions of the user who started it. It has no sandbox and no allowlist.
 Point it at code you are entitled to read.
 
-It makes no network calls. Findings are returned to the calling MCP client,
-which for a hosted assistant means they enter that assistant's context and
-leave your machine that way. `snippet` and `redact_suggest` results are masked
-by default specifically so that what leaves is identifier names and positions,
-not PHI values — but the masking is the same regex set described above, so it
-inherits the same false-negative rate. Do not treat "it was masked" as a
-guarantee.
+The server opens no sockets and makes no outbound requests. It does not follow
+that your data stays local. A tool result is returned to the MCP client that
+launched the server, and if that client is a hosted assistant, the result is
+transmitted to and processed by that provider under their terms, not this
+project's. Treat every `scan_code` and `redact_suggest` result as content you
+are sending to your model provider.
+
+`snippet` and `redact_suggest` results are masked by default specifically so
+that what gets transmitted is identifier names and positions rather than PHI
+values. The masking is the same regex set described above, so it carries the
+same false-negative rate: a value those patterns do not recognise is passed
+through unmasked. Do not treat "it was masked" as a guarantee, and do not run
+this against production PHI through a hosted client without first satisfying
+yourself about that client's data handling.
 
 ## Contributing
 

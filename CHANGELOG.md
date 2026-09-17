@@ -12,9 +12,9 @@ successful tool outputs are unchanged from 0.1.4.
 
 - `--help` and `--version` flags on the binary, so a stdio server started by
   hand no longer looks hung.
-- `engines: { node: ">=20.10.0" }`. The entrypoint uses JSON import
-  attributes, which Node added in 20.10; the previous "Node 18+" claim was
-  wrong.
+- `engines: { node: ">=22" }`. The entrypoint uses JSON import attributes;
+  the previous "Node 18+" claim was wrong. Verified on Node 22.18.0, 24.2.0,
+  and 26.8.2.
 - `npm run verify` — one command for typecheck, build, and the fixture suite.
 - `prepare` script, so `npm ci` leaves a runnable `dist/` with no separate
   build step.

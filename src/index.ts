@@ -57,7 +57,7 @@ server.tool(
 
 server.tool(
   "scan_code",
-  "Scan a local directory of source files for sensitive identifiers (patient, diagnosis, dob, ssn, mrn) flowing into risky sinks (LLM calls, logging, analytics) before they ship.",
+  "Scan a local directory of source files for sensitive identifiers (patient, diagnosis, dob, ssn, mrn, birthdate, medicalrecord) flowing into risky sinks (LLM calls, logging, analytics) before they ship.",
   {
     path: z
       .string()
