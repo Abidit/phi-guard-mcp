@@ -1,9 +1,9 @@
-import { detectPhi, PhiMatch } from "./patterns.js";
+import { detectPhi, PhiMatch, PhiType } from "./patterns.js";
 
 // Positions let a caller locate a match without the raw substring being
 // echoed back into whatever LLM context this result lands in.
 export interface DetectedPhi {
-  type: string;
+  type: PhiType;
   confidence: number;
   start: number;
   end: number;
