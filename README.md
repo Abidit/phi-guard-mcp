@@ -23,6 +23,19 @@ analytics event. Those lines look harmless in review and never show up in
 infrastructure scanning, because nothing is misconfigured — the code is just
 doing what it says.
 
+## Demo
+
+![scan_code flagging a patient name and diagnosis passed into an openai.responses.create call, then redact_suggest returning a masked result](docs/assets/phi-guard-demo-preview.gif)
+
+Eleven seconds of the walkthrough: `scan_code` flags line 15 — a patient name
+and diagnosis interpolated into an `openai.responses.create` call — and
+`redact_suggest` masks the same values out of a raw prompt. Every value shown is
+synthetic.
+
+> A linter for one class of mistake. Not a HIPAA certification, not a compliance
+> attestation, and not a dataflow analyzer — see
+> [What this is NOT](#what-this-is-not).
+
 ## Install
 
 Requires **Node.js 22 or newer**. The entrypoint uses JSON import attributes
